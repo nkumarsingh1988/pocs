@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+	<flow name="routers-in-muleFlow" doc:id="c5897bd8-6aec-483c-9ed3-c53c756b91d0" >
+		<http:listener doc:name="GET: /api/*" doc:id="5885cbe0-0ffe-4ed1-b588-e54f78878d2b" config-ref="HTTP_Listener_config" path="/api/*"/>
+		<set-variable value='#[attributes.queryParams.code default "SFO"]' doc:name="code" doc:id="d7a97667-1440-4f7f-a305-d065419485ab" variableName="code"/>
+		<validation:is-true doc:id="71c9c554-8cd6-49da-89d0-2f85fbb45b1f" expression='#[["CLE","SFO","PDF","LAX","PDX"] contains(vars.code)]' message="'Invalid destination' ++ '  ' ++ (vars.code default ' ')"/>
+		<scatter-gather doc:name="Calling two requesters" doc:id="a66d1e29-0748-40db-a588-7751be1058d9" >
+			<route >
+				<ee:transform doc:name="reqres URL" doc:id="7bebbaef-ec59-46c3-ac84-ca12cc851371">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="serviceUrls"><![CDATA[p('backend.req-res.baseUrl') ++ "/unknown"
+	]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+				<flow-ref doc:name="flights-flow" doc:id="0b68b904-5e0e-42dc-89e4-1a8e5739e229" name="flights-flow"/>
+				<logger level="INFO" doc:name="Target1" doc:id="134e557b-bb62-4295-a1ef-eb32a294ba97" message='#["Target1 Logger"]'/>
+			</route>
+			<route >
+				<ee:transform doc:name="americanFlight URL" doc:id="5f15f597-a196-4fbc-aeca-347088f21bbe">
+					<ee:message />
+					<ee:variables>
+						<ee:set-variable variableName="serviceUrls"><![CDATA[p('american.flight.baseUrl') ++ "/flights"]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="flights-flow" doc:id="8a114970-69f2-4190-87a5-417f6e62889b" name="flights-flow"/>
+				<logger level="INFO" doc:name="Target2 " doc:id="816184e3-cb3c-4a61-b763-ded9f482839d" message='#["Target2 Logger"]'/>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Flatten to [Flights]" doc:id="7c1b5eb2-8277-4f0c-8dda-57b9ab8d471a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload..payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="1f30d4a9-5443-444b-8a24-5bbda57e3bae" message="#[payload]"/>
+	</flow>
+	<flow name="flights-flow" doc:id="c13de537-88d2-4374-b80f-d81cc537dab7" >
+		<try doc:name="Try" doc:id="85f21e64-6bb9-4920-8989-3d973362007a" >
+			<http:request method="GET" doc:name="american flight" doc:id="0179f596-7d85-4690-9ca8-8fec98d6b0f0" config-ref="HTTP_Request_configuration" url="#[vars.serviceUrls]">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"client_secret" : "4a87fe7e2e43488c927372AEF981F066",
+	"client_id" : "d1374b15c6864c3682ddbed2a247a826"
+}]]]></http:headers>
+		</http:request>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="e4fe2e7a-a79a-48bc-a8b0-46f9a20036ca" >
+					<logger level="INFO" doc:name="Logger" doc:id="643689b8-2633-4e60-a0d1-1f8ec4998532" message='#["Error occurred while calling requester with service Url: " ++ vars.serviceUrls]'/>
+				</on-error-continue>
+			</error-handler>
+		</try>
+	</flow>
+	<flow name="scattergathervariableflow" doc:id="3f2dc367-9b91-498e-88b2-3cb4cc82c687" >
+<http:listener doc:name="Listener" doc:id="65bd254c-fc29-48d5-9aba-f269c61721f5" config-ref="HTTP_Listener_config" path="/variableInScatter-Gather"/>
+<set-variable variableName="var1" value="var1" doc:name="var1"/>
+<set-variable variableName="var2" value="var2" doc:name="var2"/>
+<scatter-gather doc:name="Scatter-Gather" doc:id="a5636bcf-43e2-430b-99e1-6f10c0b5ed18" >
+	<route >
+		<set-variable variableName="var2" value="newValue" doc:name="var2- newValue"/>
+        		<set-variable variableName="var3" value="appleVal" doc:name="var3- appleVal"/>
+	</route>
+	<route >
+		<set-variable variableName="var3" value="bananaVal" doc:name="var3 - bananaVal"/>
+	</route>
+	<route >
+		<set-variable variableName="var3" value="otherVal" doc:name="var3- otherVal"/>
+        <set-variable variableName="var4" value="val4" doc:name="var4"/>
+	</route>
+</scatter-gather>
+<ee:transform doc:name="flatten[payload]" doc:id="a4a2a596-0a7e-4ce8-a3c5-9721dca4f625" >
+<ee:message >
+			<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload..payload)]]>
+</ee:set-payload>
+	</ee:message>
+</ee:transform>
+</flow>
+	<flow name="routers-in-muleFlow1" doc:id="2837d71c-f435-4537-a02c-0eb49b3aae8d" >
+		<http:listener doc:name="Listener" doc:id="3a92ce8f-1b74-49f4-9653-4bc43ab33607" config-ref="HTTP_Listener_config" path="/mcd-level2"/>
+		<set-variable value="#[1]" doc:name="counter=1" doc:id="02d8ceff-90c2-4811-bac7-f6e6ed6b1151" variableName="counter" />
+		<scatter-gather doc:name="Scatter-Gather" doc:id="71189431-4ff2-410d-93b2-4d2f35a9b135" >
+			<route >
+				<set-variable value="#[vars.counter + 1]" doc:name="counter+1" doc:id="467ca75e-e462-4c27-a8d9-4d350bb3bcde" variableName="counter"/>
+			</route>
+			<route >
+				<set-variable value="#[vars.counter + 1]" doc:name="counter+1" doc:id="a89b27e2-4606-4c84-8c22-26c7590b2a44" variableName="counter"/>
+			</route>
+		</scatter-gather>
+		<logger level="INFO" doc:name="Log Counter" doc:id="515ead8a-8c7f-4f86-a750-6b3ff86ffcac" message="#[vars.counter]"/>
+	</flow>
+	<flow name="routers-in-muleFlow2" doc:id="990bfe46-f0e6-4e25-b080-4f41257853e5" >
+		<http:listener doc:name="GET /scatter-gather" doc:id="3b4d07b2-351a-42a9-905f-23d0f719e652" config-ref="HTTP_Listener_config" path="/scatter-gatherTest" />
+		<set-variable value='#[attributes.queryParams.code default "SFO"]' doc:name="code" doc:id="34471075-3bf3-4f63-a6cd-f831831f533f" variableName="code" />
+		<validation:is-true doc:name="Is true" doc:id="95308faa-a64e-488b-aee5-96199d9e9c1a" expression='#[["CLE","SFO","PDF","LAX","PDX"] contains(vars.code)]' message="'Invalid destination' ++ '  ' ++ (vars.code default ' ')" />
+		<ee:transform doc:name="Service Urls" doc:id="cf181e13-9e01-4f46-baf4-aaa0d276e7f2" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="serviceUrls" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"reqresUrl": "https://reqres.in/api/unknown",
+	"americanFlightUrl": "http://training4-american-api.cloudhub.io/flights"
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="f92bc26b-fba1-4658-8f49-88ac488b595d" >
+			<route >
+				<http:request method="GET" doc:name="reqresUrl" doc:id="41673d9a-1eef-4f1b-bcd2-d964d6e94d3a" config-ref="HTTP_Request_configuration" url="#[vars.serviceUrls.reqresUrl]" />
+			</route>
+			<route >
+				<http:request method="GET" doc:name="american flight" doc:id="92a20591-cb64-4230-836e-94dd6648745d" config-ref="HTTP_Request_configuration" url="#[vars.serviceUrls.americanFlightUrl]" >
+					<http:headers ><![CDATA[#[output application/java
+---
+{
+	"client_secret" : "4a87fe7e2e43488c927372AEF981F066",
+	"client_id" : "d1374b15c6864c3682ddbed2a247a826"
+}]]]></http:headers>
+				</http:request>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Flatten to [Flights]" doc:id="9227d6f9-249b-417b-83b3-cd74eb405b54" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload..payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c097d0de-aaa4-4c5b-b61d-0b20b884224a" message="#[payload]" />
+	</flow>
+</mule>

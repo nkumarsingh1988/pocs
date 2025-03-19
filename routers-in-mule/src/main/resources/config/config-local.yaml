@@ -1,0 +1,9 @@
+http:
+ host: "localhost"
+ port: "8081"
+
+backend:
+ req-res.baseUrl: "https://reqres.in/api"
+ 
+american:
+ flight.baseUrl: "http://training4-american-api.cloudhub.io"

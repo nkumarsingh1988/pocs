@@ -1,0 +1,23 @@
+1) routers-in-muleFlow
+
+url for get method: http://localhost:8081/scatter-gather
+
+rest url: http://mu.learn.mulesoft.com/united/flights
+
+another rest url: http://training4-american-api.cloudhub.io/flights
+client_id : d1374b15c6864c3682ddbed2a247a826
+client_secret: 4a87fe7e2e43488c927372AEF981F066
+
+
+
+2)scattergathervariableflow
+url for get method: http://localhost:8081//variableInScatter-Gather
+
+conclusion: Variable Propagation in Scatter-Gather
+Every route starts with the same initial variable values. Modifications to a variable within a specific route do not affect other 
+routes. So, if a variable is added or modified in one route, then, after aggregation, the value is defined by that route. 
+If a variable is added or modified by more than one route, the value is added to a list of all the values defined for that 
+variable within all the routes.
+
+3) routers-in-muleFlow2
+url: http://localhost:8081/scatter-gatherTest
