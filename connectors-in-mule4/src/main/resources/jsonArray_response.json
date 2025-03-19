@@ -1,0 +1,12 @@
+[
+	{
+	  "cust_Id": 101,
+	  "cust_firstName": "Nitesh",
+	  "cust_surname": "singh"
+	},
+	{
+	  "cust_Id": 102,
+	  "cust_firstName": "abc",
+	  "cust_surname": "xyz"
+	}
+]

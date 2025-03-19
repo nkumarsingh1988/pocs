@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="InsertOperation" doc:id="5d3742c5-e2eb-42ce-897e-6edec193a867" >
+		<http:listener doc:name="HTTP: \ POST" doc:id="ecd59a18-b43e-4f0f-95a3-3072a758f47d" config-ref="HTTP_Listener_config" path="/testInsert"/>
+		<logger level="INFO" doc:name="Logger" doc:id="777c26de-5a85-4171-b547-5e12562de280" />
+		<foreach doc:name="For Each" doc:id="2570370e-a65c-4b76-944a-7ecd80bb378c" collection="#[payload]">
+			<db:insert doc:name="Insert" doc:id="2dd91a81-dbba-4f78-a99d-11152f20c329" config-ref="Database_Config">
+			<db:sql><![CDATA[insert into emp(cus_id, cus_firstname, cus_surname,age) values (:customerId, :customerFirstName, :customersurname, :age)]]></db:sql>
+			<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+		</db:insert>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="bdf3654a-6be1-4b07-9d4c-a0d72d071ad5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": 201,
+	"Message": "Data inserted successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="updateOperation" doc:id="584083cd-c2a1-4d59-b215-befbc9874d38" >
+		<http:listener doc:name="HTTP: \PUT" doc:id="9be1bbdd-cee7-4f8c-b65b-3aa59bd79be0" config-ref="HTTP_Listener_config" allowedMethods="PUT" path="/update"/>
+		<db:update doc:name="Update" doc:id="49c27d5f-9445-4c40-895c-fb9d6b1e8ef2" config-ref="Database_Config">
+			<db:sql >update emp set cus_surname= :cust_surname where cus_id= :cust_Id</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+  "cust_surname": payload.customer_Surname,
+  "cust_Id" : payload.customer_Id
+}]]]></db:input-parameters>
+		</db:update>
+		<ee:transform doc:name="Transform Message" doc:id="3ac93ad6-cd96-4ccd-bcc5-7ad95fbffe3b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": 200,
+	"Message": "Data updated successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="readOperation" doc:id="5c3c383c-5fed-4598-897c-ed655f479bb1">
+		<http:listener doc:name="HTTP:\ GET" doc:id="c1ba2851-cf18-410d-8da6-959ecd8009d5" config-ref="HTTP_Listener_config" path="/read"/>
+		<db:select doc:name="Select" doc:id="8524dd31-ccb6-488c-aae2-1c7eb8f4bbe6" config-ref="Database_Config">
+			<db:sql >select * from emp where cus_surname = :cust_surname</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"cust_surname": attributes.queryParams.customerSurname
+}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="20e4ed75-d893-4ffd-8c2f-10b58da3a948" message="#[typeOf(payload)]"/>
+		<ee:transform doc:name="Transform Message" doc:id="ebc1dd82-8c9b-415c-96eb-14fef05dccd8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	cust_Id: payload01.cus_id default 0,
+	cust_firstName: payload01.cus_firstname default "",
+	cust_surname: payload01.cus_surname default "",
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="deleteOperation" doc:id="ccb6e5e0-3da8-41ac-a171-72be65cb0b7c" >
+		<http:listener doc:name="HTTP: \ GET" doc:id="3edd563d-e25a-4297-97b7-14441549ac4b" config-ref="HTTP_Listener_config" path="/delete/{fname}/{lname}"/>
+		<db:delete doc:name="Delete" doc:id="01ebb3dc-3ba6-4312-bbc5-b6271f5f3c0e" config-ref="Database_Config">
+			<db:sql >DELETE FROM EMP WHERE CUS_FIRSTNAME = :CUST_FNAME AND CUS_SURNAME = :CUST_LNAME</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	"CUST_FNAME": attributes.uriParams.fname,
+	"CUST_LNAME": attributes.uriParams.lname
+}]]]></db:input-parameters>
+		</db:delete>
+		<ee:transform doc:name="Transform Message" doc:id="673fdbe1-0c31-4fbf-b1e5-72b4374a4411" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": "Data deleted successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="Bulk-InsertOperation" doc:id="c56176da-3eed-4070-b5ca-8944a1c7b0ec" >
+		<http:listener doc:name="HTTP: \ POST" doc:id="dbe87085-8a8b-43c5-bf1b-34bbceebdaeb" config-ref="HTTP_Listener_config" path="/bulkInsert" />
+		<logger level="INFO" doc:name="Logger" doc:id="5265ab78-de37-4285-a048-536ad10acdb6"/>
+		<ee:transform doc:name="Transform Message" doc:id="094037c4-23fa-4bfb-a1bb-b1933b7b2161" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map
+{
+	"cust_id": $.customerId default null,
+	"cust_firstName": $.customerFirstName default "",
+	"cust_surname": $.customersurname default "",
+	"age": $.age default null,
+	"DOJ": "2022-11-11"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="4123761b-98a9-416b-8fb2-4b14644d67b5" transactionalAction="ALWAYS_BEGIN">
+			<db:bulk-insert doc:name="Bulk insert" doc:id="263419c3-7f46-4b0d-8743-bf82dd46e014" config-ref="Database_Config">
+			<db:sql><![CDATA[insert into emp values (:cust_id, :cust_firstName, :cust_surname, :age)]]></db:sql>
+		</db:bulk-insert>
+			<error-handler>
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="2a5e937c-8680-4ab6-a5a8-ae3b5e7cea81" >
+					<logger level="INFO" doc:name="Logger" doc:id="9fa5cd93-896c-4670-806b-4f9b75223a5d" message="Error occured" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="d116544f-8e41-43b7-b7c9-3686156ee9a2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": 201,
+	"Count": null,
+	"Message": "Data inserted successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

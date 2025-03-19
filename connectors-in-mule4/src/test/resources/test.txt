@@ -1,0 +1,40 @@
+1) InsertOperation
+url for POST:http://localhost:8081/testPath
+body: [
+	{
+	  "cust_id": 111, 
+	  "cust_firstname": "Nicole", 
+	  "cust_surname" : "Kidman"
+	},
+	{
+	  "cust_id": 112, 
+	  "cust_firstname": "Angelina", 
+	  "cust_surname" : "Jolie"
+	}
+]
+2)updateOperation
+url for PUT: http://localhost:8081/update
+body:
+{
+    "status": 200,
+    "Message": "Data updated successfully"
+}
+
+3) readOperation
+url for GET: http://localhost:8081/read?customerSurname=Singh
+
+4) DeleteOperation
+url for GET: http://localhost:8081/delete/Sonoo/Singh
+
+5) jms-consumer-to-subscribe-message-from-queue
+ send a message from active mq(Send To) which will trigger the flow.
+
+6)publish-message-to-jmsQueueFlow
+url for POST:- http://localhost:8081/publishMsg
+body: any object can send.
+{
+        "cust_Id": 102,
+        "cust_firstName": "Nitesh",
+        "cust_surname": "Singh"
+
+}

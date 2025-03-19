@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="file-connectorsFlow" doc:id="98869e67-23cf-43f6-b466-2e7beaf2fec5" >
+		<scheduler doc:name="Scheduler" doc:id="abb4371d-137c-4c5f-a8b1-a825b2719369" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="1" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<file:list doc:name="List" doc:id="da43daaa-a636-4167-a977-0232d38155db" config-ref="File_Config" directoryPath="D:\Working-folder\sample-files">
+			<file:matcher timeUnit="SECONDS" filenamePattern="*.csv" />
+		</file:list>
+		<ee:transform doc:name="Transform Message" doc:id="e91d5a6a-2b46-4235-aad6-7cfd9d891b26" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="fileDetails" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"fileName": payload.typedAttributes.fileName,
+	"path": payload.typedAttributes.path
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<file:read doc:name="Read" doc:id="6c4d96b0-745b-453c-9e0a-131e24e4ece8" config-ref="File_Config" path="#[vars.fileDetails.path[0]]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="af8bf3cc-51fa-4823-8e84-a13aa333a1ae" message="#[payload]"/>
+	</flow>
+</mule>
